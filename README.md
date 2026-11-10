@@ -7,7 +7,7 @@ SSAFY 1반 싸피데이를 위해 만든 **팀 대항 협동 방탈출 웹 게�
 
 > **발표 자료:** [게임 설명 슬라이드 (PDF, 11쪽)](docs/slides.pdf)
 >
-> **바로 해 보기:** `index.html`을 크롬으로 열거나, GitHub Pages 주소 `https://<GitHub 아이디>.github.io/ssafy-snack-escape/`로 접속하세요.
+> **바로 해 보기:** [hundredtweety.github.io/ssafy-snack-escape](https://hundredtweety.github.io/ssafy-snack-escape/)에 접속하거나, `index.html`을 내려받아 크롬으로 여세요.
 > 팀 코드 `CHOCO-17`을 넣고 이름과 역할을 고른 뒤 「우리 팀만 지금 시작하기」를 누르면 혼자서도 끝까지 플레이할 수 있어요.
 
 ## 행사 결과 (2026년 11월 9일)
