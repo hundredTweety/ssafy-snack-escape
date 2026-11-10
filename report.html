@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1반 간식 실종 사건 수사 기록</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* 레이아웃: 사건 종결 보고서 한 장. 요약 숫자 → 순위 → 타임라인 → 힌트 → 표 */
+:root{
+  --bg:#EEF1F7; --surface:#FCFCFB; --ink:#131A2C; --ink2:#4A5368; --muted:#7A8297; --line:#DCE0EA; --grid:#E4E6EC; --axis:#C3C7D2;
+  --stamp:#C7372C; --accent:#1D4ED8;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a;
+  --f-display:'Black Han Sans','IBM Plex Sans KR',sans-serif;
+  --f-body:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1020; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781; --line:#2c2c2a; --grid:#2c2c2a; --axis:#383835;
+  --stamp:#FF7A6E; --accent:#86A8FF; --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781; --line:#2c2c2a; --grid:#2c2c2a; --axis:#383835;
+  --stamp:#FF7A6E; --accent:#86A8FF; --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;word-break:keep-all}
+.wrap{max-width:960px;margin:0 auto;padding-block:40px 72px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:36px}
+h1,h2{margin:0;line-height:1.25;text-wrap:balance}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,6vw,52px)}
+h2{font-size:20px;font-weight:700}
+p{margin:0}
+.stamp{display:inline-block;font-family:var(--f-mono);font-size:12.5px;letter-spacing:.14em;color:var(--stamp);border:2px solid var(--stamp);border-radius:6px;padding:3px 10px;transform:rotate(-2deg)}
+header{display:flex;flex-direction:column;gap:14px}
+.sub{color:var(--ink2);font-size:16.5px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button.tg{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+button.tg[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.tg:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.kpi span{display:block;font-size:13px;color:var(--muted)}
+.kpi b{display:block;font-size:30px;font-weight:700;line-height:1.2;margin-top:4px}
+.kpi small{display:block;font-size:13px;color:var(--ink2)}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.cap{font-size:14px;color:var(--ink2)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--ink2)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend i.dot{border-radius:50%}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--f-body);fill:var(--ink2)}
+svg .tick{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+svg .lab{font-size:13px;fill:var(--ink);font-weight:700}
+svg .val{font-family:var(--f-mono);font-size:12.5px;fill:var(--ink);font-weight:600}
+svg .hit{cursor:default}
+#tip{position:fixed;pointer-events:none;z-index:10;background:var(--ink);color:var(--bg);font-size:13px;line-height:1.5;padding:8px 10px;border-radius:8px;max-width:260px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12.5px;color:var(--muted);font-weight:500;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rank{font-family:var(--f-display);font-size:20px}
+.pill{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:0 8px;margin:2px 4px 2px 0;white-space:nowrap}
+details{border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;padding:10px 14px;font-weight:700}
+details .tbl-wrap{border:none;border-top:1px solid var(--line);border-radius:0}
+footer{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="stamp" style="align-self:flex-start">CASE CLOSED · 301-01</span>
+  <h1>1반 간식 실종 사건<br>수사 기록</h1>
+  <p class="sub" id="sub"></p>
+  <button class="tg" id="anon" aria-pressed="false" hidden></button><p class="cap">공개용 리포트예요. 등장하는 이름은 모두 가명이고, 기록과 시각은 실제 데이터 그대로예요.</p>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<section class="card">
+  <h2>최종 기록 순위</h2>
+  <p class="cap">최종 기록 = 실제로 걸린 시간 + 힌트 1개당 2분 + 잘못 지목 1회당 1분. 짧을수록 좋아요.</p>
+  <div class="legend"><span><i style="background:var(--series-1)"></i>실제 소요 시간</span><span><i style="background:var(--series-2)"></i>힌트 패널티</span><span><i style="background:var(--series-3)"></i>오답 지목 패널티</span></div>
+  <div id="c-rank"></div>
+</section>
+
+<section class="card">
+  <h2>팀별 수사 타임라인</h2>
+  <p class="cap">점 하나가 문제 하나를 푼 순간이에요(시작 후 몇 분). ◆는 최종 추리 1단계, 깃발은 범인을 맞힌 순간이에요. 점선은 제한 시간 45분.</p>
+  <div class="legend"><span><i class="dot" style="background:var(--series-1)"></i>장소 문제 해결</span><span>◆ 남은 용의자 수 추리</span><span>⚑ 사건 해결</span></div>
+  <div id="c-time"></div>
+</section>
+
+<section class="card">
+  <h2>힌트를 연 문제</h2>
+  <p class="cap">다섯 팀이 연 힌트를 문제별로 셌어요. 가장 많은 팀이 막힌 곳이 어디였는지 보여 줘요.</p>
+  <div id="c-hint"></div>
+</section>
+
+<section class="card">
+  <h2>팀별 결과</h2>
+  <div class="tbl-wrap"><table id="t-team"></table></div>
+</section>
+
+<section class="card">
+  <h2>문제별 풀이 기록</h2>
+  <p class="cap">누가 언제 어떤 문제를 풀었는지 팀마다 펼쳐 볼 수 있어요.</p>
+  <div id="t-solve" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
+<footer id="foot"></footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const DATA = {"eventDate": "2026년 11월 9일 (월)", "exportedAt": "2026-11-10", "players": 21, "teams": [{"team": 1, "members": [{"name": "류지호", "roles": ["c"]}, {"name": "이준서", "roles": ["s"]}, {"name": "민지환", "roles": ["r"]}, {"name": "신동현", "roles": ["t"]}], "start": "17:26:50", "end": "17:57:28", "realSec": 1837.82, "hints": 1, "hintMap": {"p6": 1}, "wrongs": [], "recordSec": 1957.82, "solves": [{"id": "L1s", "title": "교실 뒤 공용 테이블", "loc": "301호", "role": "s", "by": "이준서", "sec": 43.471, "at": "17:27:34"}, {"id": "L1t", "title": "자치회에게 온 익명 DM", "loc": "301호", "role": "t", "by": "신동현", "sec": 50.268, "at": "17:27:41"}, {"id": "L1r", "title": "301호 프린터 출력 기록", "loc": "301호", "role": "r", "by": "민지환", "sec": 128.748, "at": "17:28:59"}, {"id": "L2s", "title": "초코 묻은 도어락", "loc": "간식 선반", "role": "s", "by": "이준서", "sec": 233.911, "at": "17:30:44"}, {"id": "L3s", "title": "거울 속 벽시계", "loc": "라운지", "role": "s", "by": "이준서", "sec": 269.958, "at": "17:31:20"}, {"id": "L2r", "title": "간식 영수증", "loc": "간식 선반", "role": "r", "by": "민지환", "sec": 304.869, "at": "17:31:55"}, {"id": "L2t", "title": "지나가던 2반의 증언", "loc": "간식 선반", "role": "t", "by": "신동현", "sec": 400.034, "at": "17:33:30"}, {"id": "L4s", "title": "유리창 글씨와 구멍 카드", "loc": "창가", "role": "s", "by": "이준서", "sec": 443.03, "at": "17:34:13"}, {"id": "L3r", "title": "라운지 출입 카드 로그", "loc": "라운지", "role": "r", "by": "민지환", "sec": 448.293, "at": "17:34:19"}, {"id": "L1c", "title": "프로님이 남긴 코드", "loc": "301호", "role": "c", "by": "류지호", "sec": 453.224, "at": "17:34:24"}, {"id": "L4r", "title": "창가 콘센트 전력 기록", "loc": "창가", "role": "r", "by": "민지환", "sec": 660.418, "at": "17:37:51"}, {"id": "L2c", "title": "선반 무게 센서", "loc": "간식 선반", "role": "c", "by": "류지호", "sec": 703.414, "at": "17:38:34"}, {"id": "L3t", "title": "모니터 아래 포스트잇", "loc": "라운지", "role": "t", "by": "신동현", "sec": 722.08, "at": "17:38:52"}, {"id": "L4t", "title": "블라인드의 신호", "loc": "창가", "role": "t", "by": "신동현", "sec": 770.072, "at": "17:39:40"}, {"id": "L5r", "title": "2반 자율학습 좌석", "loc": "302호", "role": "r", "by": "민지환", "sec": 797.801, "at": "17:40:08"}, {"id": "L5t", "title": "2반 칠판의 초성 퀴즈", "loc": "302호", "role": "t", "by": "신동현", "sec": 837.464, "at": "17:40:48"}, {"id": "L3c", "title": "부스 예약 DB", "loc": "라운지", "role": "c", "by": "류지호", "sec": 854.806, "at": "17:41:05"}, {"id": "L5s", "title": "찢어진 문 사진", "loc": "302호", "role": "s", "by": "이준서", "sec": 872.196, "at": "17:41:23"}, {"id": "L5c", "title": "2반의 SWEA 문제", "loc": "302호", "role": "c", "by": "류지호", "sec": 1108.349, "at": "17:45:19"}, {"id": "L4c", "title": "서랍 속 USB", "loc": "창가", "role": "c", "by": "류지호", "sec": 1258.229, "at": "17:47:49"}, {"id": "p6", "title": "최종 추리: 남은 용의자 수", "loc": "최종 추리", "role": null, "by": "신동현", "sec": 1808.314, "at": "17:56:59"}, {"id": "p7", "title": "최종 추리: 범인 지목", "loc": "최종 추리", "role": null, "by": "신동현", "sec": 1837.82, "at": "17:57:28"}], "rank": 4}, {"team": 2, "members": [{"name": "강서진", "roles": ["c"]}, {"name": "김시우", "roles": ["s"]}, {"name": "강도윤", "roles": ["r"]}, {"name": "남지아", "roles": ["t"]}], "start": "17:23:32", "end": "17:43:45", "realSec": 1213.554, "hints": 1, "hintMap": {"L3t": 1}, "wrongs": ["백싸피"], "recordSec": 1393.554, "solves": [{"id": "L1r", "title": "301호 프린터 출력 기록", "loc": "301호", "role": "r", "by": "강도윤", "sec": 112.319, "at": "17:25:24"}, {"id": "L1s", "title": "교실 뒤 공용 테이블", "loc": "301호", "role": "s", "by": "김시우", "sec": 113.886, "at": "17:25:26"}, {"id": "L1t", "title": "자치회에게 온 익명 DM", "loc": "301호", "role": "t", "by": "남지아", "sec": 141.744, "at": "17:25:54"}, {"id": "L2t", "title": "지나가던 2반의 증언", "loc": "간식 선반", "role": "t", "by": "남지아", "sec": 233.312, "at": "17:27:25"}, {"id": "L3s", "title": "거울 속 벽시계", "loc": "라운지", "role": "s", "by": "김시우", "sec": 251.349, "at": "17:27:43"}, {"id": "L4t", "title": "블라인드의 신호", "loc": "창가", "role": "t", "by": "남지아", "sec": 322.463, "at": "17:28:54"}, {"id": "L4s", "title": "유리창 글씨와 구멍 카드", "loc": "창가", "role": "s", "by": "김시우", "sec": 328.06, "at": "17:29:00"}, {"id": "L5t", "title": "2반 칠판의 초성 퀴즈", "loc": "302호", "role": "t", "by": "남지아", "sec": 346.383, "at": "17:29:18"}, {"id": "L2r", "title": "간식 영수증", "loc": "간식 선반", "role": "r", "by": "강도윤", "sec": 376.454, "at": "17:29:48"}, {"id": "L1c", "title": "프로님이 남긴 코드", "loc": "301호", "role": "c", "by": "강서진", "sec": 422.163, "at": "17:30:34"}, {"id": "L3t", "title": "모니터 아래 포스트잇", "loc": "라운지", "role": "t", "by": "남지아", "sec": 501.231, "at": "17:31:53"}, {"id": "L3r", "title": "라운지 출입 카드 로그", "loc": "라운지", "role": "r", "by": "강도윤", "sec": 524.886, "at": "17:32:17"}, {"id": "L5s", "title": "찢어진 문 사진", "loc": "302호", "role": "s", "by": "김시우", "sec": 537.262, "at": "17:32:29"}, {"id": "L2c", "title": "선반 무게 센서", "loc": "간식 선반", "role": "c", "by": "강서진", "sec": 577.771, "at": "17:33:10"}, {"id": "L3c", "title": "부스 예약 DB", "loc": "라운지", "role": "c", "by": "강서진", "sec": 665.722, "at": "17:34:38"}, {"id": "L2s", "title": "초코 묻은 도어락", "loc": "간식 선반", "role": "s", "by": "김시우", "sec": 810.034, "at": "17:37:02"}, {"id": "L5c", "title": "2반의 SWEA 문제", "loc": "302호", "role": "c", "by": "강서진", "sec": 884.018, "at": "17:38:16"}, {"id": "L4c", "title": "서랍 속 USB", "loc": "창가", "role": "c", "by": "강서진", "sec": 895.513, "at": "17:38:27"}, {"id": "L4r", "title": "창가 콘센트 전력 기록", "loc": "창가", "role": "r", "by": "강도윤", "sec": 966.932, "at": "17:39:39"}, {"id": "L5r", "title": "2반 자율학습 좌석", "loc": "302호", "role": "r", "by": "강도윤", "sec": 1067.011, "at": "17:41:19"}, {"id": "p6", "title": "최종 추리: 남은 용의자 수", "loc": "최종 추리", "role": null, "by": "강도윤", "sec": 1184.155, "at": "17:43:16"}, {"id": "p7", "title": "최종 추리: 범인 지목", "loc": "최종 추리", "role": null, "by": "강도윤", "sec": 1213.554, "at": "17:43:45"}], "rank": 1}, {"team": 3, "members": [{"name": "김도현", "roles": ["c", "t"]}, {"name": "김나은", "roles": ["c"]}, {"name": "장수아", "roles": ["c", "m"]}, {"name": "배윤호", "roles": ["s"]}, {"name": "한예린", "roles": ["r"]}], "start": "17:26:51", "end": "17:51:41", "realSec": 1490.087, "hints": 1, "hintMap": {"L1m": 1}, "wrongs": ["김싸피"], "recordSec": 1670.087, "solves": [{"id": "L1s", "title": "교실 뒤 공용 테이블", "loc": "301호", "role": "s", "by": "배윤호", "sec": 29.218, "at": "17:27:20"}, {"id": "L1r", "title": "301호 프린터 출력 기록", "loc": "301호", "role": "r", "by": "한예린", "sec": 34.593, "at": "17:27:25"}, {"id": "L1t", "title": "자치회에게 온 익명 DM", "loc": "301호", "role": "t", "by": "김도현", "sec": 54.212, "at": "17:27:45"}, {"id": "L2t", "title": "지나가던 2반의 증언", "loc": "간식 선반", "role": "t", "by": "김도현", "sec": 109.951, "at": "17:28:41"}, {"id": "L2s", "title": "초코 묻은 도어락", "loc": "간식 선반", "role": "s", "by": "배윤호", "sec": 114.465, "at": "17:28:45"}, {"id": "L3s", "title": "거울 속 벽시계", "loc": "라운지", "role": "s", "by": "배윤호", "sec": 149.115, "at": "17:29:20"}, {"id": "L3r", "title": "라운지 출입 카드 로그", "loc": "라운지", "role": "r", "by": "한예린", "sec": 172.354, "at": "17:29:43"}, {"id": "L1m", "title": "CCTV 관리 패널의 간식 스도쿠", "loc": "301호", "role": "m", "by": "장수아", "sec": 190.608, "at": "17:30:01"}, {"id": "L5c", "title": "2반의 SWEA 문제", "loc": "302호", "role": "c", "by": "김나은", "sec": 218.192, "at": "17:30:29"}, {"id": "L2m", "title": "선반 CCTV 영상", "loc": "간식 선반", "role": "m", "by": "장수아", "sec": 260.832, "at": "17:31:11"}, {"id": "L2r", "title": "간식 영수증", "loc": "간식 선반", "role": "r", "by": "한예린", "sec": 263.264, "at": "17:31:14"}, {"id": "L4s", "title": "유리창 글씨와 구멍 카드", "loc": "창가", "role": "s", "by": "배윤호", "sec": 276.04, "at": "17:31:27"}, {"id": "L4t", "title": "블라인드의 신호", "loc": "창가", "role": "t", "by": "김도현", "sec": 378.643, "at": "17:33:09"}, {"id": "L4r", "title": "창가 콘센트 전력 기록", "loc": "창가", "role": "r", "by": "한예린", "sec": 388.896, "at": "17:33:19"}, {"id": "L5s", "title": "찢어진 문 사진", "loc": "302호", "role": "s", "by": "배윤호", "sec": 420.714, "at": "17:33:51"}, {"id": "L5t", "title": "2반 칠판의 초성 퀴즈", "loc": "302호", "role": "t", "by": "김도현", "sec": 424.371, "at": "17:33:55"}, {"id": "L5r", "title": "2반 자율학습 좌석", "loc": "302호", "role": "r", "by": "한예린", "sec": 472.514, "at": "17:34:43"}, {"id": "L3m", "title": "라운지 모니터의 픽셀 그림", "loc": "라운지", "role": "m", "by": "장수아", "sec": 511.279, "at": "17:35:22"}, {"id": "L4m", "title": "창가 화이트보드 수열", "loc": "창가", "role": "m", "by": "장수아", "sec": 585.279, "at": "17:36:36"}, {"id": "L3c", "title": "부스 예약 DB", "loc": "라운지", "role": "c", "by": "김나은", "sec": 589.847, "at": "17:36:40"}, {"id": "L3t", "title": "모니터 아래 포스트잇", "loc": "라운지", "role": "t", "by": "김도현", "sec": 629.275, "at": "17:37:20"}, {"id": "L5m", "title": "302호 앞 그림자 이동 기록", "loc": "302호", "role": "m", "by": "장수아", "sec": 665.11, "at": "17:37:56"}, {"id": "L2c", "title": "선반 무게 센서", "loc": "간식 선반", "role": "c", "by": "김나은", "sec": 1038.942, "at": "17:44:10"}, {"id": "L1c", "title": "프로님이 남긴 코드", "loc": "301호", "role": "c", "by": "김나은", "sec": 1067.493, "at": "17:44:38"}, {"id": "L4c", "title": "서랍 속 USB", "loc": "창가", "role": "c", "by": "김나은", "sec": 1190.868, "at": "17:46:41"}, {"id": "p6", "title": "최종 추리: 남은 용의자 수", "loc": "최종 추리", "role": null, "by": "한예린", "sec": 1409.084, "at": "17:50:20"}, {"id": "p7", "title": "최종 추리: 범인 지목", "loc": "최종 추리", "role": null, "by": "김도현", "sec": 1490.087, "at": "17:51:41"}], "rank": 2}, {"team": 4, "members": [{"name": "구하람", "roles": ["c", "s", "r", "t", "m"]}, {"name": "노하준", "roles": ["c"]}, {"name": "윤채원", "roles": ["s"]}, {"name": "서하린", "roles": ["r", "t"]}], "start": "17:26:39", "end": "17:53:47", "realSec": 1627.862, "hints": 4, "hintMap": {"L1c": 1, "L3t": 1, "L4c": 1, "L5s": 1}, "wrongs": ["백싸피"], "recordSec": 2167.862, "solves": [{"id": "L1s", "title": "교실 뒤 공용 테이블", "loc": "301호", "role": "s", "by": "윤채원", "sec": 73.286, "at": "17:27:52"}, {"id": "L2s", "title": "초코 묻은 도어락", "loc": "간식 선반", "role": "s", "by": "윤채원", "sec": 125.583, "at": "17:28:45"}, {"id": "L3s", "title": "거울 속 벽시계", "loc": "라운지", "role": "s", "by": "윤채원", "sec": 156.033, "at": "17:29:15"}, {"id": "L5r", "title": "2반 자율학습 좌석", "loc": "302호", "role": "r", "by": "서하린", "sec": 164.92, "at": "17:29:24"}, {"id": "L1t", "title": "자치회에게 온 익명 DM", "loc": "301호", "role": "t", "by": "구하람", "sec": 206.369, "at": "17:30:05"}, {"id": "L2t", "title": "지나가던 2반의 증언", "loc": "간식 선반", "role": "t", "by": "구하람", "sec": 243.129, "at": "17:30:42"}, {"id": "L4s", "title": "유리창 글씨와 구멍 카드", "loc": "창가", "role": "s", "by": "윤채원", "sec": 329.11, "at": "17:32:08"}, {"id": "L2c", "title": "선반 무게 센서", "loc": "간식 선반", "role": "c", "by": "노하준", "sec": 338.825, "at": "17:32:18"}, {"id": "L1r", "title": "301호 프린터 출력 기록", "loc": "301호", "role": "r", "by": "서하린", "sec": 371.654, "at": "17:32:51"}, {"id": "L1c", "title": "프로님이 남긴 코드", "loc": "301호", "role": "c", "by": "노하준", "sec": 476.816, "at": "17:34:36"}, {"id": "L5c", "title": "2반의 SWEA 문제", "loc": "302호", "role": "c", "by": "노하준", "sec": 567.488, "at": "17:36:07"}, {"id": "L5s", "title": "찢어진 문 사진", "loc": "302호", "role": "s", "by": "윤채원", "sec": 684.831, "at": "17:38:04"}, {"id": "L3t", "title": "모니터 아래 포스트잇", "loc": "라운지", "role": "t", "by": "구하람", "sec": 735.381, "at": "17:38:54"}, {"id": "L4c", "title": "서랍 속 USB", "loc": "창가", "role": "c", "by": "노하준", "sec": 740.287, "at": "17:38:59"}, {"id": "L2r", "title": "간식 영수증", "loc": "간식 선반", "role": "r", "by": "구하람", "sec": 828.877, "at": "17:40:28"}, {"id": "L4t", "title": "블라인드의 신호", "loc": "창가", "role": "t", "by": "서하린", "sec": 891.765, "at": "17:41:31"}, {"id": "L3r", "title": "라운지 출입 카드 로그", "loc": "라운지", "role": "r", "by": "구하람", "sec": 979.86, "at": "17:42:59"}, {"id": "L5t", "title": "2반 칠판의 초성 퀴즈", "loc": "302호", "role": "t", "by": "서하린", "sec": 999.886, "at": "17:43:19"}, {"id": "L3c", "title": "부스 예약 DB", "loc": "라운지", "role": "c", "by": "노하준", "sec": 1042.061, "at": "17:44:01"}, {"id": "L4r", "title": "창가 콘센트 전력 기록", "loc": "창가", "role": "r", "by": "구하람", "sec": 1050.673, "at": "17:44:10"}, {"id": "L1m", "title": "CCTV 관리 패널의 간식 스도쿠", "loc": "301호", "role": "m", "by": "구하람", "sec": 1149.522, "at": "17:45:49"}, {"id": "L2m", "title": "선반 CCTV 영상", "loc": "간식 선반", "role": "m", "by": "구하람", "sec": 1214.17, "at": "17:46:53"}, {"id": "L3m", "title": "라운지 모니터의 픽셀 그림", "loc": "라운지", "role": "m", "by": "구하람", "sec": 1300.53, "at": "17:48:20"}, {"id": "L4m", "title": "창가 화이트보드 수열", "loc": "창가", "role": "m", "by": "구하람", "sec": 1381.074, "at": "17:49:40"}, {"id": "L5m", "title": "302호 앞 그림자 이동 기록", "loc": "302호", "role": "m", "by": "구하람", "sec": 1423.002, "at": "17:50:22"}, {"id": "p6", "title": "최종 추리: 남은 용의자 수", "loc": "최종 추리", "role": null, "by": "구하람", "sec": 1602.529, "at": "17:53:22"}, {"id": "p7", "title": "최종 추리: 범인 지목", "loc": "최종 추리", "role": null, "by": "구하람", "sec": 1627.862, "at": "17:53:47"}], "rank": 5}, {"team": 5, "members": [{"name": "고예준", "roles": ["c"]}, {"name": "문서아", "roles": ["s", "m"]}, {"name": "김민서", "roles": ["r"]}, {"name": "조은서", "roles": ["t"]}], "start": "17:27:05", "end": "17:51:16", "realSec": 1451.116, "hints": 4, "hintMap": {"L1c": 1, "L3t": 1, "L4c": 2}, "wrongs": [], "recordSec": 1931.116, "solves": [{"id": "L1t", "title": "자치회에게 온 익명 DM", "loc": "301호", "role": "t", "by": "조은서", "sec": 28.92, "at": "17:27:34"}, {"id": "L1s", "title": "교실 뒤 공용 테이블", "loc": "301호", "role": "s", "by": "문서아", "sec": 38.623, "at": "17:27:44"}, {"id": "L1r", "title": "301호 프린터 출력 기록", "loc": "301호", "role": "r", "by": "김민서", "sec": 86.815, "at": "17:28:32"}, {"id": "L2s", "title": "초코 묻은 도어락", "loc": "간식 선반", "role": "s", "by": "문서아", "sec": 88.439, "at": "17:28:33"}, {"id": "L3s", "title": "거울 속 벽시계", "loc": "라운지", "role": "s", "by": "문서아", "sec": 114.471, "at": "17:28:59"}, {"id": "L4s", "title": "유리창 글씨와 구멍 카드", "loc": "창가", "role": "s", "by": "문서아", "sec": 174.598, "at": "17:29:59"}, {"id": "L2t", "title": "지나가던 2반의 증언", "loc": "간식 선반", "role": "t", "by": "조은서", "sec": 179.057, "at": "17:30:04"}, {"id": "L2r", "title": "간식 영수증", "loc": "간식 선반", "role": "r", "by": "김민서", "sec": 329.182, "at": "17:32:34"}, {"id": "L2c", "title": "선반 무게 센서", "loc": "간식 선반", "role": "c", "by": "고예준", "sec": 345.399, "at": "17:32:50"}, {"id": "L3r", "title": "라운지 출입 카드 로그", "loc": "라운지", "role": "r", "by": "김민서", "sec": 408.629, "at": "17:33:54"}, {"id": "L3c", "title": "부스 예약 DB", "loc": "라운지", "role": "c", "by": "고예준", "sec": 423.343, "at": "17:34:08"}, {"id": "L3t", "title": "모니터 아래 포스트잇", "loc": "라운지", "role": "t", "by": "조은서", "sec": 456.807, "at": "17:34:42"}, {"id": "L4t", "title": "블라인드의 신호", "loc": "창가", "role": "t", "by": "조은서", "sec": 557.398, "at": "17:36:22"}, {"id": "L5c", "title": "2반의 SWEA 문제", "loc": "302호", "role": "c", "by": "고예준", "sec": 589.942, "at": "17:36:55"}, {"id": "L5s", "title": "찢어진 문 사진", "loc": "302호", "role": "s", "by": "문서아", "sec": 663.461, "at": "17:38:08"}, {"id": "L5t", "title": "2반 칠판의 초성 퀴즈", "loc": "302호", "role": "t", "by": "조은서", "sec": 744.069, "at": "17:39:29"}, {"id": "L4r", "title": "창가 콘센트 전력 기록", "loc": "창가", "role": "r", "by": "김민서", "sec": 779.653, "at": "17:40:05"}, {"id": "L5r", "title": "2반 자율학습 좌석", "loc": "302호", "role": "r", "by": "김민서", "sec": 856.085, "at": "17:41:21"}, {"id": "L1c", "title": "프로님이 남긴 코드", "loc": "301호", "role": "c", "by": "고예준", "sec": 996.541, "at": "17:43:41"}, {"id": "L1m", "title": "CCTV 관리 패널의 간식 스도쿠", "loc": "301호", "role": "m", "by": "문서아", "sec": 1008.532, "at": "17:43:53"}, {"id": "L2m", "title": "선반 CCTV 영상", "loc": "간식 선반", "role": "m", "by": "문서아", "sec": 1191.114, "at": "17:46:56"}, {"id": "L3m", "title": "라운지 모니터의 픽셀 그림", "loc": "라운지", "role": "m", "by": "문서아", "sec": 1230.851, "at": "17:47:36"}, {"id": "L4c", "title": "서랍 속 USB", "loc": "창가", "role": "c", "by": "고예준", "sec": 1246.7, "at": "17:47:52"}, {"id": "L4m", "title": "창가 화이트보드 수열", "loc": "창가", "role": "m", "by": "문서아", "sec": 1286.386, "at": "17:48:31"}, {"id": "L5m", "title": "302호 앞 그림자 이동 기록", "loc": "302호", "role": "m", "by": "문서아", "sec": 1331.554, "at": "17:49:16"}, {"id": "p6", "title": "최종 추리: 남은 용의자 수", "loc": "최종 추리", "role": null, "by": "문서아", "sec": 1429.865, "at": "17:50:55"}, {"id": "p7", "title": "최종 추리: 범인 지목", "loc": "최종 추리", "role": null, "by": "문서아", "sec": 1451.116, "at": "17:51:16"}], "rank": 3}], "hintsByProblem": [{"id": "L3t", "title": "모니터 아래 포스트잇", "loc": "라운지", "teams": [2, 4, 5], "total": 3}, {"id": "L4c", "title": "서랍 속 USB", "loc": "창가", "teams": [4, 5], "total": 3}, {"id": "L1c", "title": "프로님이 남긴 코드", "loc": "301호", "teams": [4, 5], "total": 2}, {"id": "L1m", "title": "CCTV 관리 패널의 간식 스도쿠", "loc": "301호", "teams": [3], "total": 1}, {"id": "L5s", "title": "찢어진 문 사진", "loc": "302호", "teams": [4], "total": 1}, {"id": "p6", "title": "최종 추리: 남은 용의자 수", "loc": "최종 추리", "teams": [1], "total": 1}]};
+const ROLE = { c:'코드 분석관', s:'현장 감식관', r:'기록 분석관', t:'탐문 수사관', m:'감시 분석관' };
+let anon = false;
+
+
+/* 이름 가리기: 팀원은 "2팀 A", 그 밖의 이름은 "학생 1" */
+const ALIAS = {}; let extra = 0;
+DATA.teams.forEach(t => t.members.forEach((m, i) => { ALIAS[m.name] = t.team + '팀 ' + String.fromCharCode(65 + i); }));
+const nm = n => { if (!anon) return esc(n); if (!ALIAS[n]) ALIAS[n] = '학생 ' + (++extra); return ALIAS[n]; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mmss = s => { s = Math.floor(s); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };  // 게임과 같이 초 미만은 버림
+
+/* 툴팁 */
+const tip = document.getElementById('tip');
+function bindTips(root){
+  root.querySelectorAll('[data-tip]').forEach(el => {
+    el.addEventListener('pointerenter', e => { tip.innerHTML = el.dataset.tip; tip.hidden = false; move(e); });
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerleave', () => { tip.hidden = true; });
+  });
+}
+function move(e){ const w = tip.offsetWidth, h = tip.offsetHeight; let x = e.clientX + 14, y = e.clientY + 14; if (x + w > innerWidth - 8) x = e.clientX - w - 14; if (y + h > innerHeight - 8) y = e.clientY - h - 14; tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
+const rr = (x, y, w, h, r) => { r = Math.min(r, w, h/2); return `M${x},${y}h${w-r}a${r},${r} 0 0 1 ${r},${r}v${h-2*r}a${r},${r} 0 0 1 -${r},${r}h-${w-r}z`; };
+
+function render(){
+  const D = DATA, T = D.teams, byRank = [...T].sort((a,b) => a.rank - b.rank), win = byRank[0];
+  document.getElementById('sub').textContent = `${D.eventDate} · 3층 301호 · ${T.length}팀 ${D.players}명이 참여해 ${T.filter(t => t.recordSec != null).length}팀 모두 범인을 찾았어요.`;
+  const avg = T.reduce((a,t) => a + t.realSec, 0) / T.length;
+  const hints = T.reduce((a,t) => a + t.hints, 0), wr = T.reduce((a,t) => a + t.wrongs.length, 0);
+  document.getElementById('kpis').innerHTML = [
+    ['우승', win.team + '팀', '최종 기록 ' + mmss(win.recordSec)],
+    ['사건 해결', T.length + ' / ' + T.length + '팀', '제한 시간 45분 안에 전원 해결'],
+    ['평균 실제 소요', mmss(avg), '가장 빠른 팀 ' + mmss(Math.min(...T.map(t => t.realSec)))],
+    ['힌트 · 오답 지목', hints + '개 · ' + wr + '회', '다섯 팀 합계'],
+  ].map(k => `<div class="kpi"><span>${k[0]}</span><b>${k[1]}</b><small>${k[2]}</small></div>`).join('');
+
+  /* 1) 순위: 쌓은 가로 막대 */
+  { const W = 720, L = 78, R = 64, rowH = 34, gap = 14, top = 6, max = Math.ceil(Math.max(...T.map(t => t.recordSec)) / 600) * 600;
+    const H = top + byRank.length * (rowH + gap) + 22, x = s => L + (W - L - R) * s / max;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="팀별 최종 기록 쌓은 막대 그래프">`;
+    for (let m = 0; m <= max; m += 600){ s += `<line x1="${x(m)}" x2="${x(m)}" y1="${top-4}" y2="${H-20}" stroke="var(--grid)"/><text class="tick" x="${x(m)}" y="${H-4}" text-anchor="middle">${m/60}분</text>`; }
+    byRank.forEach((t, i) => {
+      const y = top + i * (rowH + gap), parts = [['실제 소요', t.realSec, 'var(--series-1)'], ['힌트 ' + t.hints + '개', t.hints*120, 'var(--series-2)'], ['오답 지목 ' + t.wrongs.length + '회', t.wrongs.length*60, 'var(--series-3)']].filter(p => p[1] > 0);
+      s += `<text class="lab" x="0" y="${y + rowH/2 + 5}">${i+1}위 ${t.team}팀</text>`;
+      let cx = x(0);
+      parts.forEach((p, j) => {
+        const w = x(p[1]) - x(0) - (j < parts.length-1 ? 2 : 0);
+        const tipTxt = `<b>${t.team}팀 · ${p[0]}</b><br>${mmss(p[1])}`;
+        s += j === parts.length-1 ? `<path d="${rr(cx, y, w, rowH, 4)}" fill="${p[2]}" class="hit" data-tip="${esc(tipTxt)}"/>` : `<rect x="${cx}" y="${y}" width="${w}" height="${rowH}" fill="${p[2]}" class="hit" data-tip="${esc(tipTxt)}"/>`;
+        cx += w + 2;
+      });
+      s += `<text class="val" x="${x(t.recordSec) + 8}" y="${y + rowH/2 + 5}">${mmss(t.recordSec)}</text>`;
+    });
+    s += `<line x1="${x(0)}" x2="${x(0)}" y1="${top-4}" y2="${H-20}" stroke="var(--axis)"/></svg>`;
+    const el = document.getElementById('c-rank'); el.innerHTML = s; bindTips(el); }
+
+  /* 2) 타임라인 */
+  { const W = 720, L = 54, R = 70, rowH = 46, top = 8, max = 45*60, teams = [...T].sort((a,b) => a.team - b.team);
+    const H = top + teams.length * rowH + 24, x = s => L + (W - L - R) * Math.min(s, max) / max;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="팀별 문제 해결 시점 타임라인">`;
+    for (let m = 0; m <= 45; m += 5){ s += `<line x1="${x(m*60)}" x2="${x(m*60)}" y1="${top}" y2="${H-22}" stroke="var(--grid)"/><text class="tick" x="${x(m*60)}" y="${H-6}" text-anchor="middle">${m}</text>`; }
+    s += `<text class="tick" x="${W-R+12}" y="${H-6}">분</text>`;
+    s += `<line x1="${x(max)}" x2="${x(max)}" y1="${top}" y2="${H-22}" stroke="var(--stamp)" stroke-dasharray="4 4"/>`;
+    teams.forEach((t, i) => {
+      const cy = top + i * rowH + rowH/2;
+      s += `<text class="lab" x="0" y="${cy + 5}">${t.team}팀</text><line x1="${x(0)}" x2="${x(t.realSec)}" y1="${cy}" y2="${cy}" stroke="var(--axis)" stroke-width="2"/>`;
+      t.solves.filter(v => v.id !== 'p6' && v.id !== 'p7').forEach(v => {
+        const tp = `<b>${t.team}팀 · ${mmss(v.sec)}</b><br>${esc(v.title)}<br>${esc(v.loc)} · ${ROLE[v.role]||''}<br>${nm(v.by)}`;
+        s += `<circle cx="${x(v.sec)}" cy="${cy}" r="12" fill="transparent" class="hit" data-tip="${esc(tp)}"/><circle cx="${x(v.sec)}" cy="${cy}" r="5" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2" pointer-events="none"/>`;
+      });
+      const p6 = t.solves.find(v => v.id === 'p6'), p7 = t.solves.find(v => v.id === 'p7');
+      if (p6){ const px = x(p6.sec); s += `<path d="M${px},${cy-7}l7,7l-7,7l-7,-7z" fill="var(--ink)" stroke="var(--surface)" stroke-width="2" class="hit" data-tip="${esc(`<b>${t.team}팀 · ${mmss(p6.sec)}</b><br>최종 추리: 남은 용의자 수<br>${nm(p6.by)}`)}"/>`; }
+      if (p7){ const px = x(p7.sec); s += `<g class="hit" data-tip="${esc(`<b>${t.team}팀 · 사건 해결 ${mmss(p7.sec)}</b><br>범인 지목 성공<br>${nm(p7.by)}`)}"><line x1="${px}" x2="${px}" y1="${cy-14}" y2="${cy+8}" stroke="var(--ink)" stroke-width="2"/><path d="M${px},${cy-14}h12l-4,5l4,5h-12z" fill="var(--stamp)"/></g><text class="val" x="${px + 18}" y="${cy + 5}">${mmss(p7.sec)}</text>`; }
+    });
+    s += `</svg>`;
+    const el = document.getElementById('c-time'); el.innerHTML = s; bindTips(el); }
+
+  /* 3) 힌트 */
+  { const list = D.hintsByProblem, W = 720, L = 250, R = 50, rowH = 26, gap = 10, max = Math.max(...list.map(h => h.total), 1);
+    const H = list.length * (rowH + gap), x = v => (W - L - R) * v / max;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="문제별 힌트 사용 수 막대 그래프">`;
+    list.forEach((h, i) => {
+      const y = i * (rowH + gap), w = Math.max(x(h.total), 4);
+      s += `<text x="0" y="${y + rowH/2 + 5}" font-size="13"><tspan class="lab" style="font-weight:500">${esc(h.title)}</tspan><tspan class="tick" dx="8">${esc(h.id)}</tspan></text>`;
+      s += `<path d="${rr(L, y, w, rowH, 4)}" fill="var(--series-1)" class="hit" data-tip="${esc(`<b>${h.title}</b><br>${h.teams.join(', ')}팀이 연 힌트 ${h.total}개`)}"/><text class="val" x="${L + w + 8}" y="${y + rowH/2 + 5}">${h.total}</text>`;
+    });
+    s += `</svg>`;
+    const el = document.getElementById('c-hint'); el.innerHTML = s; bindTips(el); }
+
+  /* 표 */
+  document.getElementById('t-team').innerHTML = `<thead><tr><th>순위</th><th>팀</th><th>팀원 (역할)</th><th>시작 → 해결</th><th>실제 소요</th><th>힌트</th><th>오답 지목</th><th>최종 기록</th></tr></thead><tbody>${
+    byRank.map(t => `<tr><td class="rank">${t.rank}</td><td><b>${t.team}팀</b></td><td>${t.members.map(m => `<span class="pill">${nm(m.name)} · ${m.roles.map(r => ROLE[r].replace(' ', ' ')).join(', ')}</span>`).join('')}</td><td class="n">${t.start} → ${t.end}</td><td class="n">${mmss(t.realSec)}</td><td class="n">${t.hints}개</td><td>${t.wrongs.length ? t.wrongs.length + '회 (' + t.wrongs.map(nm).join(', ') + ')' : '0회'}</td><td class="n"><b>${mmss(t.recordSec)}</b></td></tr>`).join('')}</tbody>`;
+  document.getElementById('t-solve').innerHTML = [...T].sort((a,b) => a.team - b.team).map(t => `<details><summary>${t.team}팀 · ${t.solves.length}개 해결</summary><div class="tbl-wrap"><table><thead><tr><th>경과</th><th>시각</th><th>장소</th><th>문제</th><th>역할</th><th>푼 사람</th></tr></thead><tbody>${
+    t.solves.map(v => `<tr><td class="n">${mmss(v.sec)}</td><td class="n">${v.at}</td><td>${esc(v.loc)}</td><td>${esc(v.title)}</td><td>${ROLE[v.role] || '팀 전체'}</td><td>${nm(v.by)}</td></tr>`).join('')}</tbody></table></div></details>`).join('');
+  document.getElementById('foot').textContent = `데이터: Firebase Realtime Database 백업 (${D.exportedAt} 기준). 시각은 한국 시간이에요.`;
+  const b = document.getElementById('anon'); b.setAttribute('aria-pressed', anon); b.textContent = anon ? '이름 보이기' : '이름 가리기';
+}
+document.getElementById('anon').addEventListener('click', () => { anon = !anon; try { localStorage.setItem('ssafy301-report-anon', anon ? '1' : '0'); } catch(e){} render(); });
+render();
+</script>
+</body>
+</html>

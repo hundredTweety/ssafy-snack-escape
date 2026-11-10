@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>간식 실종 사건 코드 해부</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* 레이아웃: 사건 파일처럼 읽는 한 줄 칼럼 + 넓은 화면에서는 왼쪽 고정 목차 */
+:root{
+  --bg:#EEF1F7; --surface:#FFFFFF; --surface-2:#F6F7FB; --ink:#131A2C; --muted:#5B6478; --line:#D9DEEA;
+  --accent:#1D4ED8; --accent-soft:#DCE5FF; --stamp:#C7372C; --postit:#FFE27A; --postit-ink:#3A2E00;
+  --code-bg:#0E1424; --code-ink:#DCE3F2; --ck:#FF7AA8; --cs:#9BE29B; --cf:#7EB6FF; --cc:#7A859E; --cn:#FFC66D;
+  --ok:#14804A;
+  --f-display:'Black Han Sans','IBM Plex Sans KR',sans-serif;
+  --f-body:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1020; --surface:#141B2E; --surface-2:#10172A; --ink:#E6EBF5; --muted:#9AA6BF; --line:#26304A;
+  --accent:#86A8FF; --accent-soft:#1B2A55; --stamp:#FF7A6E; --postit:#5A4A12; --postit-ink:#FFF1BF;
+  --code-bg:#070B16; --ok:#4CD38A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --surface:#141B2E; --surface-2:#10172A; --ink:#E6EBF5; --muted:#9AA6BF; --line:#26304A;
+  --accent:#86A8FF; --accent-soft:#1B2A55; --stamp:#FF7A6E; --postit:#5A4A12; --postit-ink:#FFF1BF;
+  --code-bg:#070B16; --ok:#4CD38A; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
+.wrap{max-width:1180px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:grid;grid-template-columns:minmax(0,1fr);gap:40px}
+@media (min-width:1100px){.wrap{grid-template-columns:220px minmax(0,1fr)}}
+main{min-width:0;max-width:780px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.25}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(38px,7vw,60px);letter-spacing:-.5px}
+h2{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4.4vw,34px)}
+h3{font-size:18px;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+b{font-weight:700}
+
+/* 목차 */
+nav.toc{display:none}
+@media (min-width:1100px){nav.toc{display:block;position:sticky;top:calc(env(safe-area-inset-top, 0px) + 24px);align-self:start;font-size:14px}}
+.toc p{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:t}
+.toc a{display:block;color:var(--ink);text-decoration:none;padding:5px 10px;border-radius:8px;line-height:1.4}
+.toc a:hover,.toc a:focus-visible{background:var(--surface);outline:none}
+.toc .n{font-family:var(--f-mono);color:var(--muted);font-size:12px;margin-right:6px}
+
+/* 머리 */
+.stampline{display:inline-block;font-family:var(--f-mono);font-size:13px;letter-spacing:.14em;color:var(--stamp);border:2px dashed var(--stamp);border-radius:6px;padding:4px 12px;transform:rotate(-1.5deg)}
+header{display:flex;flex-direction:column;gap:18px}
+.lede{font-size:18.5px;color:var(--muted);max-width:62ch}
+
+/* 파일 지도 */
+.map{display:flex;height:46px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.map span{min-width:0;display:block}
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 18px;margin-top:14px;font-size:14px}
+.legend div{display:flex;gap:10px;align-items:baseline}
+.legend i{flex:none;width:12px;height:12px;border-radius:3px;transform:translateY(1px)}
+.legend .ln{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 핵심 흐름 */
+.loop{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
+.loop div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;line-height:1.5;position:relative}
+.loop div b{display:block;font-family:var(--f-mono);font-size:12.5px;color:var(--accent);margin-bottom:4px}
+.loop div:not(:last-child)::after{content:"→";position:absolute;right:-8px;top:50%;transform:translate(50%,-50%);color:var(--muted);font-weight:700;z-index:1}
+@media (max-width:720px){.loop{grid-template-columns:minmax(0,1fr)}.loop div:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-8px;transform:translate(-50%,50%)}}
+.loop-back{font-size:14px;color:var(--muted);margin-top:10px}
+
+/* 레슨 */
+section.lesson{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px}
+.eyebrow{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.12em;color:var(--stamp)}
+.where{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+pre{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:16px 18px;overflow-x:auto;font-family:var(--f-mono);font-size:13.5px;line-height:1.65;font-variant-ligatures:none}
+pre .k{color:var(--ck)} pre .s{color:var(--cs)} pre .f{color:var(--cf)} pre .c{color:var(--cc);font-style:italic} pre .n{color:var(--cn)}
+.codecap{display:flex;justify-content:space-between;gap:12px;font-family:var(--f-mono);font-size:12.5px;color:var(--muted);margin-bottom:-8px}
+.try{background:var(--postit);color:var(--postit-ink);border-radius:3px 3px 14px 3px;padding:16px 18px;display:grid;gap:6px;box-shadow:0 6px 16px rgba(19,26,44,.10)}
+.try h3{font-size:15px;letter-spacing:.04em}
+.try ol{margin:0;padding-left:20px;display:grid;gap:4px}
+.try code{background:rgba(255,255,255,.45);border-color:rgba(58,46,0,.18);color:inherit}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;font-size:15.5px}
+ul.pts{margin:0;padding-left:20px;display:grid;gap:4px}
+
+/* SQL */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--f-mono);font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:none}
+td.v{font-family:var(--f-body);font-size:13.5px}
+td.in{color:var(--ok);font-weight:700} td.outr{color:var(--stamp)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ ";color:var(--accent)}
+details[open] summary::before{content:"▾ "}
+details > div{padding:0 16px 16px;display:grid;gap:14px}
+summary:focus-visible,.check input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 체크리스트 */
+.check{display:grid;gap:8px}
+.check label{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.check input{width:18px;height:18px;margin-top:4px;accent-color:var(--accent);flex:none}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+.progress{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+footer{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:20px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="목차">
+  <p>CONTENTS</p>
+  <ol>
+    <li><a href="#map"><span class="n">00</span>파일 지도</a></li>
+    <li><a href="#loop"><span class="n">00</span>핵심 흐름</a></li>
+    <li><a href="#l1"><span class="n">01</span>상태와 render()</a></li>
+    <li><a href="#l2"><span class="n">02</span>이벤트 위임</a></li>
+    <li><a href="#l3"><span class="n">03</span>템플릿 문자열</a></li>
+    <li><a href="#l4"><span class="n">04</span>정답 확인과 해시</a></li>
+    <li><a href="#l5"><span class="n">05</span>2차원 배열 회전</a></li>
+    <li><a href="#l6"><span class="n">06</span>밀기 퍼즐</a></li>
+    <li><a href="#l7"><span class="n">07</span>Canvas</a></li>
+    <li><a href="#l8"><span class="n">08</span>실시간 공유</a></li>
+    <li><a href="#l9"><span class="n">09</span>CSS 버그 해부</a></li>
+    <li><a href="#sql"><span class="n">SQL</span>부스 예약 DB</a></li>
+    <li><a href="#plan"><span class="n">✓</span>학습 체크리스트</a></li>
+  </ol>
+</nav>
+
+<main>
+<header>
+  <span class="stampline">CASE No. 301-01 · 코드 수사 노트</span>
+  <h1>간식 실종 사건<br>코드 해부</h1>
+  <p class="lede"><code>1반-간식실종사건.html</code> 한 파일(1,597줄)을 교재 삼아 웹 프로그래밍의 기본기를 익히는 가이드예요. 게임을 직접 해 봤으니, 화면에서 본 장면이 어느 코드에서 나오는지 따라가며 읽어요.</p>
+  <p class="note">줄 번호는 2026년 11월 10일 기준이에요. 코드를 고치면 번호가 조금씩 밀리니, 에디터에서 <b>함수 이름으로 검색</b>(Ctrl+F)해서 찾는 게 가장 정확해요.</p>
+</header>
+
+<section class="lesson" id="map">
+  <span class="eyebrow">00 · 파일 지도</span>
+  <h2>1,597줄은 이렇게 나뉘어 있어요</h2>
+  <p>막대 길이는 실제 줄 수 비율이에요. 문제 데이터와 화면 그리기가 절반을 넘고, 핵심 로직(렌더·이벤트)은 생각보다 짧아요.</p>
+  <div class="map" role="img" aria-label="파일 구간별 줄 수 비율">
+    <span style="flex:429;background:#8FA6D6"></span>
+    <span style="flex:107;background:#C9B07A"></span>
+    <span style="flex:363;background:#E0B95A"></span>
+    <span style="flex:141;background:#4FA88C"></span>
+    <span style="flex:297;background:#5D7FD6"></span>
+    <span style="flex:74;background:#D9604F"></span>
+    <span style="flex:149;background:#B5508F"></span>
+    <span style="flex:26;background:#7A859E"></span>
+  </div>
+  <div class="legend">
+    <div><i style="background:#8FA6D6"></i>CSS 스타일<span class="ln">11–439</span></div>
+    <div><i style="background:#C9B07A"></i>설정 · 고정 데이터 · 유틸<span class="ln">441–547</span></div>
+    <div><i style="background:#E0B95A"></i>장소 · 문제 · 힌트 · 단서<span class="ln">548–910</span></div>
+    <div><i style="background:#4FA88C"></i>상태 · 저장 · 동기화<span class="ln">911–1051</span></div>
+    <div><i style="background:#5D7FD6"></i>화면 HTML 만들기<span class="ln">1052–1348</span></div>
+    <div><i style="background:#D9604F"></i>render() · 밀기 퍼즐<span class="ln">1349–1422</span></div>
+    <div><i style="background:#B5508F"></i>클릭 · 제출 이벤트<span class="ln">1423–1571</span></div>
+    <div><i style="background:#7A859E"></i>시작<span class="ln">1572–1597</span></div>
+  </div>
+</section>
+
+<section class="lesson" id="loop">
+  <span class="eyebrow">00 · 핵심 흐름</span>
+  <h2>버튼 하나를 누르면 생기는 일</h2>
+  <p>이 게임의 거의 모든 동작은 같은 다섯 단계를 돌아요. 이 고리 하나만 이해하면 나머지는 "어떤 데이터를 바꾸느냐"의 차이예요.</p>
+  <div class="loop">
+    <div><b>① 클릭</b>버튼에 붙은 <code>data-act="sus"</code></div>
+    <div><b>② 위임</b>document 하나가 모든 클릭을 받음</div>
+    <div><b>③ switch</b><code>case 'sus':</code> 로 갈라짐</div>
+    <div><b>④ 상태 변경</b><code>ui</code> 또는 <code>T</code>(팀 데이터)를 바꿈</div>
+    <div><b>⑤ render()</b>상태로 HTML을 새로 만들어 화면 교체</div>
+  </div>
+  <p class="loop-back">팀원이 바꾼 내용도 서버에서 ④로 들어와 ⑤를 다시 실행해요. 그래서 다른 사람 화면에도 바로 반영돼요.</p>
+</section>
+
+<section class="lesson" id="l1">
+  <span class="eyebrow">01 · 상태와 화면</span>
+  <h2>화면은 상태를 비추는 거울</h2>
+  <p class="where">render() · 1353줄 / ui · 924줄 / T · 917줄</p>
+  <p>데이터는 두 그릇에 나뉘어 있어요. <code>ui</code>는 <b>나만 보는 상태</b>(지금 보는 장소, 카드 회전 각도, 열린 탭)이고, <code>T</code>는 <b>팀 전체가 공유하는 상태</b>(푼 문제, 지운 용의자, 쓴 힌트)예요. <code>render()</code>는 이 둘을 보고 어느 화면을 그릴지 고른 다음, HTML 문자열을 통째로 갈아 끼워요.</p>
+  <div class="codecap"><span>render() 핵심부</span><span>1353–1362</span></div>
+<pre><span class="k">function</span> <span class="f">render</span>(){
+  <span class="c">// ① 입력 중이던 값·스크롤 위치를 기억해 둔다</span>
+  $app.<span class="f">querySelectorAll</span>(<span class="s">'input[id]'</span>).<span class="f">forEach</span>(i =&gt; { keep[i.id] = i.value; });
+  …
+  <span class="c">// ② 상태에 따라 화면 하나를 고른다</span>
+  <span class="k">if</span> (!ME)              $app.innerHTML = <span class="f">loginHTML</span>();   <span class="c">// 로그인 전</span>
+  <span class="k">else if</span> (T.solved?.p7) $app.innerHTML = <span class="f">endHTML</span>();     <span class="c">// 사건 해결</span>
+  <span class="k">else if</span> (!<span class="f">effStart</span>())  $app.innerHTML = <span class="f">lobbyHTML</span>();   <span class="c">// 시작 전 대기실</span>
+  <span class="k">else</span>                  $app.innerHTML = <span class="f">gameHTML</span>();    <span class="c">// 게임 중</span>
+  <span class="c">// ③ 기억해 둔 값·포커스·스크롤을 되돌린다</span>
+  …
+}</pre>
+  <p>①과 ③이 왜 필요할까요? <code>innerHTML</code>로 통째로 바꾸면 입력창도 새로 만들어져서, 치던 글자와 커서 위치가 날아가요. 그래서 바꾸기 전에 저장하고 바꾼 뒤 되돌려요. React 같은 도구는 <b>바뀐 부분만</b> 고쳐서 이 문제를 처음부터 피하는데, 그게 바로 React가 존재하는 이유 중 하나예요.</p>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>게임을 열고 개발자 도구(F12) Console에 <code>ui</code>를 쳐서 지금 상태를 들여다봐요.</li>
+    <li><code>ui.view = 'L3'; render()</code>를 실행해 화면이 라운지로 바뀌는지 봐요. 상태만 바꾸고 그렸을 뿐이에요.</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l2">
+  <span class="eyebrow">02 · 이벤트</span>
+  <h2>클릭 처리기는 딱 하나</h2>
+  <p class="where">document.addEventListener('click') · 1437줄</p>
+  <p>버튼마다 <code>onclick</code>을 다는 대신, <b>document 하나</b>가 모든 클릭을 받아요. 클릭된 요소에서 위로 올라가며 <code>data-act</code>가 붙은 가장 가까운 조상을 찾고(<code>closest</code>), 그 값으로 할 일을 고르죠. 이걸 <b>이벤트 위임</b>이라고 해요. 화면을 매번 새로 그려도 처리기를 다시 달 필요가 없다는 게 핵심 장점이에요.</p>
+  <div class="codecap"><span>클릭 처리기 (일부)</span><span>1437–1466</span></div>
+<pre>document.<span class="f">addEventListener</span>(<span class="s">'click'</span>, e =&gt; {
+  <span class="k">const</span> t = e.target.<span class="f">closest</span>(<span class="s">'[data-act]'</span>); <span class="k">if</span> (!t || t.disabled) <span class="k">return</span>;
+  <span class="k">const</span> a = t.dataset.act, v = t.dataset.v;
+  <span class="k">switch</span> (a){
+    <span class="k">case</span> <span class="s">'sus'</span>:   <span class="f">commit</span>({ out:{ [v]: !T.out?.[v] } }); <span class="f">render</span>(); <span class="k">break</span>;  <span class="c">// 용의자 지우기 (팀 공유)</span>
+    <span class="k">case</span> <span class="s">'g-rot'</span>: ui.gRot = (ui.gRot+<span class="n">1</span>)%<span class="n">4</span>; <span class="f">render</span>(); <span class="k">break</span>;              <span class="c">// 구멍 카드 회전 (나만)</span>
+    …
+  }
+});</pre>
+  <p>두 줄을 비교해 보세요. <code>'sus'</code>는 <code>commit()</code>으로 <b>팀 상태</b>를 바꾸고, <code>'g-rot'</code>은 <code>ui</code>만 바꿔요. 카드를 돌리는 건 내 화면에서만 일어나야 하니까요. 좌석 배치도에서 이름을 눌러 지우는 기능도 버튼에 <code>data-act="sus"</code>만 붙여서 만들었어요. 처리기는 하나도 안 고쳤어요.</p>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>구멍 카드 옆에 "반시계로 돌리기" 버튼을 추가해 봐요. 버튼에 <code>data-act="g-rot-back"</code>을 붙이고, <code>case 'g-rot-back': ui.gRot = (ui.gRot+3)%4; render(); break;</code>를 넣으면 끝이에요.</li>
+    <li>왜 <code>-1</code>이 아니라 <code>+3</code>일까요? <code>(0-1)%4</code>를 Console에 쳐 보면 답이 나와요.</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l3">
+  <span class="eyebrow">03 · HTML 만들기</span>
+  <h2>문제 하나는 함수 하나</h2>
+  <p class="where">PUZ · 625줄 / 부스 예약 DB(L3c) · 707줄 / codeBox · 620줄 / esc · 534줄</p>
+  <p>모든 문제는 <code>PUZ</code> 객체 안에 같은 모양으로 들어 있어요. <code>title</code>, 입력칸 <code>label</code>, 그리고 HTML을 돌려주는 <code>body()</code> 함수예요. 백틱(<code>`</code>)으로 감싼 <b>템플릿 문자열</b> 안에 <code>${…}</code>로 코드를 끼워 넣고, 배열의 <code>map()</code>과 <code>join('')</code>으로 표의 행을 찍어 내요.</p>
+  <div class="codecap"><span>SQL 문제의 표 만들기 (간추림)</span><span>707–711</span></div>
+<pre>L3c: { title:<span class="s">'부스 예약 DB'</span>, label:<span class="s">'이 쿼리의 결과'</span>, num:<span class="k">true</span>, body: () =&gt; `
+  &lt;table&gt;…&lt;tbody&gt;
+    ${[[<span class="n">1</span>,<span class="s">'A'</span>,<span class="s">'13:00'</span>,<span class="s">'14:00'</span>,<span class="n">1</span>,<span class="s">"'OK'"</span>], [<span class="n">2</span>,<span class="s">'B'</span>, …], …]
+      .<span class="f">map</span>(r =&gt; `&lt;tr&gt;${r.<span class="f">map</span>(v =&gt; `&lt;td&gt;${v}&lt;/td&gt;`).<span class="f">join</span>(<span class="s">''</span>)}&lt;/tr&gt;`).<span class="f">join</span>(<span class="s">''</span>)}
+  &lt;/tbody&gt;&lt;/table&gt;
+  ${<span class="f">codeBox</span>(<span class="s">'query.sql'</span>, `SELECT SUM(headcount) …`)}` }</pre>
+  <p>사람 이름처럼 밖에서 들어오는 글자는 꼭 <code>esc()</code>를 거쳐요. <code>&lt;</code>를 <code>&amp;lt;</code>로 바꿔서, 누가 이름에 <code>&lt;script&gt;</code>를 넣어도 코드로 실행되지 않고 글자로만 보이게 하는 거예요. <code>innerHTML</code>을 쓰는 코드라면 반드시 챙겨야 하는 습관이에요(XSS 방어).</p>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>L3c 표에 7번째 행 <code>[7,'F','13:10','13:50',2,"'OK'"]</code>을 추가하고, 정답이 몇으로 바뀌어야 하는지 먼저 손으로 계산해 봐요.</li>
+    <li>Console에서 <code>esc('&lt;b&gt;굵게&lt;/b&gt;')</code>를 실행해 결과를 확인해 봐요.</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l4">
+  <span class="eyebrow">04 · 정답 확인</span>
+  <h2>정답을 코드에 숨기는 법</h2>
+  <p class="where">norm · 535줄 / fnv · 536줄 / isRight · 537줄 / ANS · 461줄</p>
+  <p>파일에 정답 <code>"4"</code>가 그대로 적혀 있으면 F12 한 번에 들통나겠죠. 그래서 정답 대신 정답의 <b>해시</b>(지문 같은 값)만 저장해요. 입력이 들어오면 같은 방식으로 해시를 만들어 비교해요.</p>
+  <div class="codecap"><span>정답 확인 3단계</span><span>535–537</span></div>
+<pre><span class="c">// 1) 정규화: 공백·문장부호 제거, 대문자로, 끝의 "개/명/번/장" 제거</span>
+<span class="k">const</span> norm = s =&gt; <span class="f">String</span>(s).<span class="f">normalize</span>(<span class="s">'NFC'</span>).<span class="f">toUpperCase</span>().<span class="f">replace</span>(<span class="s">/[\s.,!?…]/g</span>, <span class="s">''</span>).<span class="f">replace</span>(<span class="s">/(개|명|번|장)$/</span>, <span class="s">''</span>);
+<span class="c">// 2) 해시: FNV-1a, 글자를 하나씩 섞어 8자리 16진수로</span>
+<span class="k">function</span> <span class="f">fnv</span>(str){ … h ^= x; h = Math.<span class="f">imul</span>(h, <span class="n">16777619</span>) &gt;&gt;&gt; <span class="n">0</span>; … }
+<span class="c">// 3) 비교: 소금(SALT)을 앞에 붙여 해시한 값이 정답 목록에 있나?</span>
+<span class="k">const</span> isRight = (id, v) =&gt; (ANS[id] || []).<span class="f">includes</span>(<span class="f">fnv</span>(SALT + <span class="f">norm</span>(v)));</pre>
+  <ul class="pts">
+    <li><b>정규화</b> 덕분에 "4", " 4 ", "4명" 모두 정답으로 인정돼요.</li>
+    <li><b>SALT</b>(<code>'ssafy301|'</code>)를 붙이면, 흔한 답의 해시를 미리 계산해 둔 표로 거꾸로 찾기가 어려워져요.</li>
+    <li><b>한계:</b> 숫자 답은 0부터 9999까지 전부 넣어 보면 금방 찾아요. 브라우저에서만 도는 게임이라 어쩔 수 없는 부분이고, 진짜 서비스라면 정답 확인은 서버가 맡아야 해요.</li>
+  </ul>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>Console에 <code>fnv(SALT + norm('4명'))</code>와 <code>ANS.L3c</code>를 각각 쳐서 비교해 봐요.</li>
+    <li>위 "한계"를 직접 확인해 봐요: <code>for (let i=0;i&lt;10000;i++) if (isRight('L3c', String(i))) console.log(i)</code></li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l5">
+  <span class="eyebrow">05 · 알고리즘</span>
+  <h2>구멍 카드: 2차원 배열을 90° 돌리기</h2>
+  <p class="where">GR_MSG · 502줄 / GR_H0 · 503줄 / GRID · 504줄</p>
+  <p>4×4 칸에 구멍이 4개 뚫린 카드를 네 번 돌리면 16칸을 한 번씩 다 지나가요. 코드는 반대로, <b>문장을 구멍 위치에 차례로 써 넣어서</b> 유리창 글자판을 만들어요.</p>
+  <div class="codecap"><span>글자판 만들기</span><span>504–512</span></div>
+<pre><span class="k">const</span> GRID = (() =&gt; {
+  <span class="k">const</span> g = Array.<span class="f">from</span>({length:<span class="n">4</span>}, () =&gt; <span class="f">Array</span>(<span class="n">4</span>).<span class="f">fill</span>(<span class="s">''</span>));
+  <span class="k">let</span> holes = GR_H0, k = <span class="n">0</span>;
+  <span class="k">for</span> (<span class="k">let</span> t = <span class="n">0</span>; t &lt; <span class="n">4</span>; t++) {
+    <span class="c">// 왼쪽 위부터 읽도록 (행, 열) 순으로 정렬한 뒤 글자를 하나씩 채운다</span>
+    [...holes].<span class="f">sort</span>((a,b) =&gt; a[<span class="n">0</span>]-b[<span class="n">0</span>] || a[<span class="n">1</span>]-b[<span class="n">1</span>]).<span class="f">forEach</span>(([r,c]) =&gt; { g[r][c] = GR_MSG[k++]; });
+    holes = holes.<span class="f">map</span>(([r,c]) =&gt; [c, <span class="n">3</span>-r]);   <span class="c">// 시계 방향 90° 회전</span>
+  }
+  <span class="k">return</span> g;
+})();</pre>
+  <p>핵심은 <code>[r, c] → [c, 3-r]</code> 한 줄이에요. 맨 윗줄(r=0)이 맨 오른쪽 열(c=3)이 되니 시계 방향이에요. 화면에서는 같은 회전을 CSS <code>transform: rotate(90deg)</code>로 보여 주니까, 수학과 그림이 맞아떨어져야 퍼즐이 성립해요.</p>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>종이에 4×4 칸을 그리고 구멍 (0,3)이 네 번 돌면서 어디로 가는지 따라가 봐요.</li>
+    <li><code>GR_H0</code>를 바꾸면 겹치는 칸이 생길 수 있어요. 16칸이 모두 다른지 확인하는 함수를 만들어 봐요. 힌트: <code>new Set(…).size === 16</code></li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l6">
+  <span class="eyebrow">06 · 알고리즘</span>
+  <h2>밀기 퍼즐: 항상 풀 수 있게 섞기</h2>
+  <p class="where">slideShuffle · 1388줄 / slideSolved · 1387줄 / case 'slide' · 1473줄</p>
+  <p>3×3 조각을 아무렇게나 섞으면 <b>절반은 절대 풀 수 없는</b> 배치가 나와요. 그래서 이 게임은 섞지 않고, 완성된 상태에서 <b>빈칸을 80번 무작위로 움직여요</b>. 실제로 가능한 이동만 했으니, 거꾸로 되돌리면 반드시 풀려요.</p>
+  <div class="codecap"><span>섞기</span><span>1388–1398</span></div>
+<pre><span class="k">let</span> a = [<span class="n">0</span>,<span class="n">1</span>,<span class="n">2</span>,<span class="n">3</span>,<span class="n">4</span>,<span class="n">5</span>,<span class="n">6</span>,<span class="n">7</span>,<span class="n">8</span>], b = <span class="n">8</span>, prev = -<span class="n">1</span>;   <span class="c">// 8 = 빈칸, b = 빈칸 위치</span>
+<span class="k">for</span> (<span class="k">let</span> k = <span class="n">0</span>; k &lt; <span class="n">80</span>; k++){
+  <span class="k">const</span> r = Math.<span class="f">floor</span>(b/<span class="n">3</span>), c = b%<span class="n">3</span>, nb = [];
+  <span class="k">if</span> (r&gt;<span class="n">0</span>) nb.<span class="f">push</span>(b-<span class="n">3</span>); <span class="k">if</span> (r&lt;<span class="n">2</span>) nb.<span class="f">push</span>(b+<span class="n">3</span>);   <span class="c">// 위·아래 이웃</span>
+  <span class="k">if</span> (c&gt;<span class="n">0</span>) nb.<span class="f">push</span>(b-<span class="n">1</span>); <span class="k">if</span> (c&lt;<span class="n">2</span>) nb.<span class="f">push</span>(b+<span class="n">1</span>);   <span class="c">// 왼쪽·오른쪽 이웃</span>
+  <span class="k">const</span> opts = nb.<span class="f">filter</span>(x =&gt; x !== prev), n = opts[Math.<span class="f">floor</span>(Math.<span class="f">random</span>()*opts.length)];
+  [a[b], a[n]] = [a[n], a[b]]; prev = b; b = n;              <span class="c">// 구조 분해로 맞바꾸기</span>
+}</pre>
+  <p>1차원 배열 칸 번호 <code>i</code>를 <code>Math.floor(i/3)</code>(행)과 <code>i%3</code>(열)로 바꾸는 계산이 계속 나와요. 2차원 판을 1차원 배열로 다루는 아주 흔한 기술이에요. <code>prev</code>는 방금 온 칸으로 바로 되돌아가는 헛걸음을 막아요.</p>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>클릭 처리기의 <code>case 'slide'</code>에서 "옆 칸인지" 판단하는 <code>adj</code> 조건을 읽어 봐요. 왜 <code>Math.abs(i-b) === 1</code>만으로는 부족할까요? (2번 칸과 3번 칸을 생각해 보세요.)</li>
+    <li>80을 4로 바꾸면 퍼즐이 얼마나 쉬워지는지 해 봐요.</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l7">
+  <span class="eyebrow">07 · 그래픽</span>
+  <h2>Canvas로 사진 위에 포스트잇 그리기</h2>
+  <p class="where">buildSlideImg · 1399줄</p>
+  <p>찢어진 문 사진은 미리 만든 이미지가 아니에요. 원본 사진을 <code>&lt;canvas&gt;</code>에 그리고, 그 위에 노란 사각형과 비밀번호를 코드로 그린 다음, <code>toDataURL()</code>로 이미지 주소를 만들어요. 조각 9개는 같은 이미지를 <code>background-position</code>만 다르게 해서 잘라 보여 줘요.</p>
+  <div class="codecap"><span>포스트잇 그리기 (간추림)</span><span>1399–1415</span></div>
+<pre>g.<span class="f">drawImage</span>(img, sx, <span class="n">0</span>, sw, img.height, <span class="n">0</span>, <span class="n">0</span>, <span class="n">900</span>, <span class="n">600</span>);  <span class="c">// 사진을 3:2로 잘라 그리기</span>
+g.<span class="f">save</span>(); g.<span class="f">translate</span>(<span class="n">600</span>, <span class="n">400</span>); g.<span class="f">rotate</span>(-<span class="n">0.04</span>);       <span class="c">// 조각 4·5·7·8이 만나는 꼭짓점으로</span>
+g.fillStyle = <span class="s">'#FFE27A'</span>; g.<span class="f">fillRect</span>(-<span class="n">215</span>, -<span class="n">150</span>, <span class="n">430</span>, <span class="n">280</span>);
+[...<span class="s">'0859'</span>].<span class="f">forEach</span>((d, i) =&gt; g.<span class="f">fillText</span>(d, [-<span class="n">150</span>, -<span class="n">50</span>, <span class="n">50</span>, <span class="n">150</span>][i], <span class="n">82</span>));
+g.<span class="f">restore</span>();
+ui.slideImg = cv.<span class="f">toDataURL</span>(<span class="s">'image/jpeg'</span>, <span class="n">.82</span>);</pre>
+  <p class="note">이 부분은 이번에 실제로 고친 곳이에요. 원래는 포스트잇이 가운데 조각 하나에 쏙 들어가서, 퍼즐을 안 풀어도 비밀번호가 보였어요. 그림 위치를 900×600 판의 조각 경계(x=300·600, y=200·400)에 맞춰 옮겨서 고쳤어요. <b>좌표 계산이 곧 게임 디자인</b>이라는 좋은 예예요.</p>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li><code>g.rotate(-0.04)</code>의 숫자를 <code>-0.3</code>으로 바꿔 보고, 단위가 도(°)가 아니라 라디안이라는 걸 확인해 봐요.</li>
+    <li>Console에서 <code>const im = new Image(); im.src = ui.slideImg; document.body.append(im)</code>를 실행하면, 자르기 전의 완성된 그림 한 장이 페이지 맨 아래에 붙어요.</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l8">
+  <span class="eyebrow">08 · 네트워크</span>
+  <h2>팀원 화면에 바로 뜨는 원리</h2>
+  <p class="where">commit · 1000줄 / fireBackend · 958줄 / goOffline · 1009줄</p>
+  <p>팀 상태를 바꿀 때는 항상 <code>commit()</code>을 불러요. 내 화면의 <code>T</code>를 먼저 바꾸고(그래서 즉시 반응해 보이고), 그다음 서버(Firebase)에 바뀐 부분만 보내요.</p>
+  <div class="codecap"><span>commit()</span><span>1000–1008</span></div>
+<pre><span class="k">function</span> <span class="f">commit</span>(patch){
+  <span class="f">deepMerge</span>(T, JSON.<span class="f">parse</span>(JSON.<span class="f">stringify</span>(patch)));        <span class="c">// ① 내 화면 먼저</span>
+  <span class="k">if</span> (MODE !== <span class="s">'online'</span>){ <span class="f">lsSet</span>(<span class="f">offKey</span>(), T); <span class="k">return</span>; }   <span class="c">// 오프라인이면 브라우저에만 저장</span>
+  writeChain = writeChain.<span class="f">then</span>(() =&gt; BACKEND.<span class="f">patchTeam</span>(n, patch))  <span class="c">// ② 서버로, 한 번에 하나씩 순서대로</span>
+    .<span class="f">catch</span>(<span class="k">async</span> e =&gt; { …한 번 더 시도… <span class="f">goOffline</span>(<span class="s">'write'</span>); });     <span class="c">// ③ 실패하면 오프라인 모드로</span>
+}</pre>
+  <ul class="pts">
+    <li><b>받기:</b> <code>EventSource</code>로 서버와 연결을 열어 두면, 누가 바꿀 때마다 서버가 변경분을 밀어 줘요. 받은 데이터로 <code>T</code>를 고치고 <code>render()</code>를 불러요.</li>
+    <li><b>순서 보장:</b> <code>writeChain</code>은 Promise를 줄줄이 이어서, 빠르게 두 번 눌러도 요청이 보낸 순서대로 도착하게 해요.</li>
+    <li><b>장애 대비:</b> 연결이 끊기면 <code>localStorage</code>에 저장하는 모드로 바뀌고, 4자리 증거 코드를 말로 불러 주는 방식으로 게임을 이어 가요.</li>
+  </ul>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>개발자 도구 Network 탭을 켜고 용의자 하나를 지워 봐요. <code>PATCH</code> 요청 하나가 날아가는 게 보여요. (실제 팀 데이터에 반영되니 연습용 팀으로만 해 보세요.)</li>
+    <li><code>deepMerge</code>(545줄)는 재귀 함수예요. <code>deepMerge({a:{x:1}}, {a:{y:2}})</code>의 결과를 먼저 예상하고 실행해 봐요.</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="l9">
+  <span class="eyebrow">09 · CSS</span>
+  <h2>버그 해부: 유리창이 사라진 이유</h2>
+  <p class="where">.grille-box · 213줄 / .glass · 214줄</p>
+  <p>현장 감식관의 창가 문제에서 글자가 버튼 위로 쏟아져 나온 버그, 기억나요? 원인은 CSS 한 줄이었어요.</p>
+<pre><span class="c">/* 부모: 첫 칸은 내용물 크기만큼(auto) */</span>
+.grille-box{ <span class="f">grid-template-columns</span>: auto minmax(<span class="n">0</span>,1fr) }
+<span class="c">/* 고치기 전: 내 너비 = 칸 너비의 100%  →  칸 너비 = 내 너비 … 서로 기다림 */</span>
+.glass{ <span class="f">width</span>: min(<span class="n">300px</span>, <span class="n">100%</span>) }
+<span class="c">/* 고친 뒤: 300px로 정해 두고, 좁은 화면에서만 줄어들게 */</span>
+.glass{ <span class="f">width</span>: <span class="n">300px</span>; <span class="f">max-width</span>: <span class="n">100%</span> }</pre>
+  <p><code>auto</code> 칸은 안에 든 것의 크기를 보고 너비를 정하는데, 안에 든 유리창은 "칸 너비의 100%"로 정하겠다고 하니 서로 상대를 기다리는 꼴이 됐어요. 브라우저는 이 순환을 0으로 풀어 버렸고, 글자를 담은 판만 너비가 0인 상자 밖으로 흘러넘쳤어요. <b>퍼센트 크기는 부모 크기가 먼저 정해져 있어야 의미가 있다</b>는 걸 기억하면 이런 버그를 피할 수 있어요.</p>
+  <ul class="pts">
+    <li>이 파일의 다크 모드도 볼 만해요. 색을 전부 <code>--ink</code>, <code>--surface</code> 같은 <b>CSS 변수</b>로 정의하고(13줄), <code>prefers-color-scheme: dark</code>일 때 변수 값만 바꿔요(26줄).</li>
+    <li>반응형은 <code>@media (max-width:760px)</code>(329줄)에서 2단 배치를 1단으로 바꾸는 식이에요.</li>
+  </ul>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li>개발자 도구 Elements 탭에서 <code>.glass</code>의 width를 <code>min(300px,100%)</code>로 되돌려 보고, 버그가 다시 나타나는지 직접 봐요.</li>
+    <li>Rendering 패널에서 "prefers-color-scheme: dark"를 켜서 다크 모드를 확인해 봐요.</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="sql">
+  <span class="eyebrow">SQL · 3층 라운지 · 코드 분석관</span>
+  <h2>부스 예약 DB 문제 풀이</h2>
+  <p>게임 속 SQL 문제를 그대로 옮겼어요. 먼저 직접 풀어 보고, 아래 풀이를 열어 보세요.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>id</th><th>booth</th><th>start_time</th><th>end_time</th><th>headcount</th><th>status</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>A</td><td>13:00</td><td>14:00</td><td>1</td><td>'OK'</td></tr>
+      <tr><td>2</td><td>B</td><td>13:00</td><td>14:00</td><td>3</td><td>'OK'</td></tr>
+      <tr><td>3</td><td>C</td><td>13:00</td><td>14:00</td><td>1</td><td>NULL</td></tr>
+      <tr><td>4</td><td>D</td><td>13:00</td><td>13:30</td><td>1</td><td>'CANCEL'</td></tr>
+      <tr><td>5</td><td>D</td><td>14:00</td><td>15:00</td><td>2</td><td>'OK'</td></tr>
+      <tr><td>6</td><td>E</td><td>12:00</td><td>13:00</td><td>4</td><td>'OK'</td></tr>
+    </tbody>
+  </table></div>
+<pre><span class="k">SELECT</span> <span class="f">SUM</span>(headcount)
+<span class="k">FROM</span> reservation
+<span class="k">WHERE</span> start_time &gt;= <span class="s">'13:00'</span>
+  <span class="k">AND</span> end_time &lt;= <span class="s">'14:00'</span>
+  <span class="k">AND</span> status &lt;&gt; <span class="s">'CANCEL'</span>;</pre>
+  <details>
+    <summary>풀이 보기 (정답 포함)</summary>
+    <div>
+      <p>WHERE 조건 세 개를 <b>모두</b> 통과한 행의 <code>headcount</code>만 더해요. 행마다 따져 보면 이래요.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>id</th><th>시작 ≥ 13:00</th><th>끝 ≤ 14:00</th><th>status ≠ CANCEL</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>참</td><td>참</td><td>참</td><td class="in">포함 +1</td></tr>
+          <tr><td>2</td><td>참</td><td>참</td><td>참</td><td class="in">포함 +3</td></tr>
+          <tr><td>3</td><td>참</td><td>참</td><td class="v"><b>UNKNOWN</b></td><td class="outr">제외</td></tr>
+          <tr><td>4</td><td>참</td><td>참</td><td>거짓</td><td class="outr">제외</td></tr>
+          <tr><td>5</td><td>참</td><td>거짓 (15:00)</td><td>참</td><td class="outr">제외</td></tr>
+          <tr><td>6</td><td>거짓 (12:00)</td><td>참</td><td>참</td><td class="outr">제외</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>정답은 1 + 3 = 4</b>예요. 함정은 3번 행이에요. SQL에서 <code>NULL</code>은 "값을 모름"이라서, <code>NULL &lt;&gt; 'CANCEL'</code>은 참도 거짓도 아닌 <b>UNKNOWN</b>이 돼요. WHERE는 <b>참인 행만</b> 통과시키니 3번 행은 빠져요. NULL을 "CANCEL이 아님"으로 읽으면 5라고 답하게 되는 함정이에요.</p>
+      <p>NULL인 행도 넣고 싶다면 이렇게 써야 해요:</p>
+<pre><span class="k">AND</span> (status &lt;&gt; <span class="s">'CANCEL'</span> <span class="k">OR</span> status <span class="k">IS NULL</span>)
+<span class="c">-- 또는</span>
+<span class="k">AND</span> <span class="f">COALESCE</span>(status, <span class="s">''</span>) &lt;&gt; <span class="s">'CANCEL'</span></pre>
+      <p>하나 더: 시각을 <code>'13:00'</code> 같은 <b>문자열</b>로 비교해도 맞게 나오는 건 두 자리 숫자가 같은 형식으로 맞춰져 있어서예요. <code>'9:00'</code>처럼 자릿수가 다르면 <code>'9:00' &gt; '13:00'</code>이 되어 버려요. 실무에서는 <code>TIME</code>이나 <code>DATETIME</code> 타입을 써요.</p>
+    </div>
+  </details>
+  <div class="try"><h3>직접 해 보기</h3><ol>
+    <li><code>COUNT(*)</code>와 <code>COUNT(status)</code>는 이 표에서 각각 몇일까요? (NULL을 세는지 안 세는지가 달라요.)</li>
+    <li>6번 행(12:00~13:00)도 13시 정각까지 쓴 예약이에요. "13시~14시 사이에 조금이라도 겹친 예약"을 구하려면 조건을 어떻게 바꿔야 할까요?</li>
+  </ol></div>
+</section>
+
+<section class="lesson" id="plan">
+  <span class="eyebrow">✓ · 학습 체크리스트</span>
+  <h2>추천 순서</h2>
+  <p class="progress" id="progress" aria-live="polite">0 / 8 완료</p>
+  <div class="check" id="check">
+    <label><input type="checkbox" id="c1"><span>게임을 열고 F12로 <code>ui</code>와 <code>T</code>를 들여다보기 (01)</span></label>
+    <label><input type="checkbox" id="c2"><span>버튼 하나를 골라 클릭 → switch → render 흐름을 끝까지 따라가기 (02)</span></label>
+    <label><input type="checkbox" id="c3"><span>"반시계로 돌리기" 버튼 직접 추가하기 (02)</span></label>
+    <label><input type="checkbox" id="c4"><span>L3c 표에 행을 추가하고 정답이 어떻게 바뀌는지 계산하기 (03 · SQL)</span></label>
+    <label><input type="checkbox" id="c5"><span>Console에서 <code>isRight</code>로 정답 확인 원리 실험하기 (04)</span></label>
+    <label><input type="checkbox" id="c6"><span>종이에 구멍 카드 회전을 그려 보고 <code>[c, 3-r]</code> 납득하기 (05)</span></label>
+    <label><input type="checkbox" id="c7"><span>개발자 도구로 유리창 CSS 버그를 다시 만들어 보기 (09)</span></label>
+    <label><input type="checkbox" id="c8"><span>새 문제 하나를 <code>PUZ</code>에 추가하고 정답 해시까지 연결하기 (종합)</span></label>
+  </div>
+  <p>마지막 항목까지 해냈다면, 같은 게임을 React로 다시 만들어 보는 걸 추천해요. <code>ui</code>는 <code>useState</code>로, <code>render()</code>는 컴포넌트로, <code>data-act</code> 위임은 <code>onClick</code>으로 옮겨 가면서 "React가 대신 해 주는 일"이 무엇인지 몸으로 알게 돼요.</p>
+</section>
+
+<footer>1반 간식 실종 사건 · 코드 수사 노트. 체크 표시는 이 브라우저에만 저장돼요.</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  const KEY = 'ssafy301-study-checks';
+  const boxes = [...document.querySelectorAll('#check input')];
+  const out = document.getElementById('progress');
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ saved = {}; }
+  const update = () => { out.textContent = boxes.filter(b => b.checked).length + ' / ' + boxes.length + ' 완료'; };
+  boxes.forEach(b => {
+    b.checked = !!saved[b.id];
+    b.addEventListener('change', () => {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch(e){}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>
